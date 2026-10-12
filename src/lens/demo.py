@@ -15,6 +15,7 @@ import argparse
 import asyncio
 import json
 import os
+import sys
 import time
 from typing import Any
 
@@ -86,7 +87,7 @@ async def _amain(args: argparse.Namespace) -> int:
             audit_event(tool="demo_start", kind="run", model=model.name,
                         request=inputs, response=None, thread=thread)
             print(f"lens-demo — subject={args.subject} task={args.task} model={model.name} thread={thread}")
-            result = await graph.ainvoke(inputs, config)
+            result = await asyncio.wait_for(graph.ainvoke(inputs, config), timeout=3300)
 
             intr = result.get("__interrupt__")
             if intr:
@@ -97,8 +98,9 @@ async def _amain(args: argparse.Namespace) -> int:
                     print(f"\nAWAITING HUMAN APPROVAL (thread {thread}). "
                           'Re-run with --approve "<Full Name>" to finalize. Nothing was written.')
                     return 3
-                result = await graph.ainvoke(
-                    Command(resume={"approved": True, "approver": args.approve}), config)
+                result = await asyncio.wait_for(
+                    graph.ainvoke(Command(resume={"approved": True, "approver": args.approve}), config),
+                    timeout=3300)
 
             if result.get("error"):
                 print(f"\nRUN FAILED: {result['error']}")
@@ -118,7 +120,25 @@ async def _amain(args: argparse.Namespace) -> int:
 
 
 def main() -> None:
-    raise SystemExit(asyncio.run(_amain(_parse_args())))
+    import threading
+
+    def _watchdog() -> None:
+        # Last resort: anyio/MCP cleanup can deadlock on error paths (observed
+        # live 2026-10-12: demo hung 40+ min after the LLM call timed out).
+        time.sleep(3600)
+        os._exit(2)
+
+    threading.Thread(target=_watchdog, daemon=True).start()
+    try:
+        code = asyncio.run(_amain(_parse_args()))
+    except BaseException:
+        import traceback
+        traceback.print_exc()
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os._exit(1)
+    sys.stdout.flush()
+    os._exit(code)  # skip async cleanup at shutdown — same deadlock class
 
 
 if __name__ == "__main__":

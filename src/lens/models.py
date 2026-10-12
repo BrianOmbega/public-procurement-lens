@@ -94,7 +94,7 @@ class OpenAICompatModel:
     async def _chat(self, system: str, user: str) -> str:
         if "qwen3" in self.name.lower():
             system += "\n/no_think"  # Qwen3 thinking-mode soft switch: caps latency blowup on CPU
-        async with httpx.AsyncClient(timeout=900) as client:
+        async with httpx.AsyncClient(timeout=2700) as client:
             r = await client.post(
                 f"{self.base_url}/chat/completions",
                 headers={"Authorization": f"Bearer {self.api_key}"},
@@ -102,7 +102,7 @@ class OpenAICompatModel:
                       "messages": [{"role": "system", "content": system},
                                    {"role": "user", "content": user}],
                       "temperature": 0.1,
-                      "max_tokens": 1500,
+                      "max_tokens": 900,
                       "response_format": {"type": "json_object"}})
             r.raise_for_status()
             return r.json()["choices"][0]["message"]["content"]
@@ -137,7 +137,7 @@ class OpenAICompatModel:
                                  ("canonical_name", "aliases_matched", "total_awards",
                                   "buyers", "data_quality_notes")},
         }
-        user = json.dumps(payload, default=str)[:7000]
+        user = json.dumps(payload, default=str)[:4500]
         if feedback:
             user += ("\n\nYour previous findings were REJECTED by the citation validator: "
                      + json.dumps(feedback)[:800]
