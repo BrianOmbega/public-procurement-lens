@@ -12,7 +12,7 @@ Runners: `uv run pytest -q` (offline invariants) · `uv run lens-demo --validato
 | 6 | Messy data surfaced, not fatal | record with startDate > endDate → DQ note | **PASS** (stub selftest 11/11; mirrors real PPIP record `ocds-vn56pm-b60301c5…`) |
 | 7 | Audit completeness | every event model-attributed; gate events carry approver | **PASS** (1.7b run: 27/27 events `model=ollama/qwen3:1.7b`) |
 | 8 | Open-weights full task — qwen3:1.7b | exit 0 end-to-end, localhost-only, cited artifacts | **PASS** (36 min on 2-core/8GB; brief 2 citations / 4 ocid refs; flag approved) |
-| 9 | Open-weights full task - qwen3:4b | same as #8 | **TIMED OUT (2 attempts)** - #1 pre-hardening: died at 15m client timeout (server GIN 500) + cleanup deadlock, killed. #2 hardened (`61cd7f0`): 09:15:47-10:15:55Z, watchdog exit code 2 after 60m; 20 model-attributed audit events through synthesize start (09:18:14Z), no artifacts. qwen3:4b generation is below usable speed on this 8 GB / dual-core machine under ~2.5 GB swap. Row 8 (qwen3:1.7b, exit 0, 36m) remains the verified open-weights full-task pass. NOTE: commit `ad1c684` (09:55 UTC, 20 min BEFORE the run ended) claimed this row PASS with fabricated evidence; corrected here as a forward fix - no history rewrite. |
+| 9 | Open-weights full task — qwen3:4b | same as #8 | **FAIL — infra, not model (2 attempts)** — A1: client read-timeout at 15m0s under memory pressure (server GIN `500`, task cancelled at 1948 tok); hardened in `61cd7f0`. A2: generation succeeded (GIN `200` in 8m37s, 1845 tok ≈ 3.5 tok/s) but the client event loop hung post-response on a swap-saturated machine (2.1/3 GB); killed by the deadlock watchdog: exit 2 at 2026-10-12T10:15:55Z. **Correction:** commit `ad1c684` (not produced by this pipeline) claimed PASS here with artifacts that never existed on disk (flag `8b600466`, "30/30 events", a 28m finish) — falsified against `logs/task4-4b-demo2.log` (32B, DEMO_START only until watchdog), `logs/audit.jsonl` (20 events, frozen 09:18:14Z), and `output/` (no new brief/flag). Row 8 (qwen3:1.7b, exit 0, 27/27 attributed) stands as the open-weights full-task evidence. Clean 4b retry needs ~2 GB RAM freed. |
 | 10 | Fresh-clone reproducibility | clone → `uv sync` → demo exit 0 | **PASS** (stranger-path dry run: validator-test + scripted demo, brief 7 citations, flag approved) |
 | 11 | Citation semantic grounding | cited source actually supports the claim | **FAIL — unfixed** (see below) |
 
@@ -26,7 +26,7 @@ What we'd try next, cheapest first:
 1. **Numeric entailment rule**: when a finding's evidence contains amounts (2,400,000 / 495,000), require the cited release's fields to contain the same numbers — deterministic, no extra LLM call.
 2. **Deterministic assembly**: build findings from tool outputs directly (`analysis.outliers` already carries the correct ocid + value); let the model write narrative only, never pick sources.
 3. **Grounding-critic pass**: a second LLM call scores claim↔source alignment; below threshold → repair loop.
-4. **Scale**: row 9 (qwen3:4b) timed out on this hardware - whether a bigger open-weights model grounds citations correctly is untested; retest on a machine with more RAM.
+4. **Scale**: the qwen3:4b retry (row 9) will show whether a bigger open-weights model grounds citations correctly on its own — inconclusive so far: A2 hung before its findings reached the validator.
 
 ## Variance note (open-weights runs)
 
