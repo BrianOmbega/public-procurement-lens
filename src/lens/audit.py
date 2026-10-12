@@ -34,7 +34,7 @@ def audit_event(
         "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "kind": kind,
         "tool": tool,
-        "model": model or os.environ.get("LENS_MODEL", "unset"),
+        "model": model or os.environ.get("LENS_MODEL") or os.environ.get("MODEL") or "unset",
         "session": session or os.environ.get("LENS_SESSION", "local"),
         "request": _jsonable(request),
         "response": _jsonable(response),

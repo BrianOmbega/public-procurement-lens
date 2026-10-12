@@ -30,7 +30,7 @@ SYNTH_SYSTEM = (
     "identifier; uncited findings are rejected by the validator. severity is one of "
     "low|medium|high|critical. Return ONLY JSON: {\"findings\": [{\"claim\": str, "
     '"evidence\": str, "severity\": str, "sources": [{"ocid": str, "field_path"?: str, '
-    '"quote"?: str}]}]}. Example (shape ONLY; the ocid shown is FAKE - yours must be copied verbatim from the inputs): {"findings": [{"claim": "Award X is a price outlier", "evidence": "2,400,000 KES vs median 495,000 across 4 comparables", "severity": "high", "sources": [{"ocid": "ocds-example-0001", "field_path": "awards[0].value.amount"}]}]}. The agent prepares the file; humans decide awards.'
+    '"quote"?: str}]}]}. Example (shape ONLY; the ocid shown is FAKE - yours must be copied verbatim from the inputs): {"findings": [{"claim": "Award X is a price outlier", "evidence": "2,400,000 KES vs median 495,000 across 4 comparables", "severity": "high", "sources": [{"ocid": "ocds-example-0001", "field_path": "awards[0].value.amount"}]}]}. Never copy the example claim text; every claim MUST name the concrete subject ocid and cite real figures from the inputs. The agent prepares the file; humans decide awards.'
 )
 
 _DEFAULT_CHECKS = ["price_analysis", "supplier_history", "data_quality"]
