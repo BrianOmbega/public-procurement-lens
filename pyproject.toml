@@ -15,6 +15,7 @@ dependencies = [
 
 [project.scripts]
 lens-stub = "lens.stubs.stub_mcp:main"
+lens-demo = "lens.demo:main"
 
 [dependency-groups]
 dev = [
