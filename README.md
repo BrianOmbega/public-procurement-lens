@@ -49,6 +49,6 @@ Layout: `src/lens/` (graph, models, mcp_bridge, audit, schemas, stubs) · `docs/
 
 ## Status (2026-10-12)
 
-Orchestration + open-weights slice green (qwen3:4b verification run in flight). Real `lens-mcp` over Kenya PPIP ingestion is a teammate workstream — contract-first design makes stub ↔ real a config change. Submission deadline: 2026-10-15.
+Orchestration + open-weights slice green (qwen3:1.7b verified exit 0; qwen3:4b attempts timed out on this 8 GB machine - see EVALS.md row 9). Real `lens-mcp` over Kenya PPIP ingestion is a teammate workstream — contract-first design makes stub ↔ real a config change. Submission deadline: 2026-10-15.
 
 License: MIT.
