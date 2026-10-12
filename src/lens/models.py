@@ -92,14 +92,17 @@ class OpenAICompatModel:
         self.api_key = api_key
 
     async def _chat(self, system: str, user: str) -> str:
-        async with httpx.AsyncClient(timeout=600) as client:
+        if "qwen3" in self.name.lower():
+            system += "\n/no_think"  # Qwen3 thinking-mode soft switch: caps latency blowup on CPU
+        async with httpx.AsyncClient(timeout=900) as client:
             r = await client.post(
                 f"{self.base_url}/chat/completions",
                 headers={"Authorization": f"Bearer {self.api_key}"},
                 json={"model": self.name.split("/", 1)[-1],
                       "messages": [{"role": "system", "content": system},
                                    {"role": "user", "content": user}],
-                      "temperature": 0.1})
+                      "temperature": 0.1,
+                      "max_tokens": 1500})
             r.raise_for_status()
             return r.json()["choices"][0]["message"]["content"]
 
