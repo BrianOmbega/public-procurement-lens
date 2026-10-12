@@ -17,6 +17,7 @@ Invariants enforced in code, not left to the model:
 """
 from __future__ import annotations
 
+import os
 from typing import Any, Optional, TypedDict
 
 from langgraph.checkpoint.memory import InMemorySaver
@@ -110,11 +111,12 @@ class LensGraph:
             history = await self.bridge.call("get_supplier_history", supplier=supplier)
         provenance = None
         if self.fetch is not None:
-            # Index API, not the SPA page: tenders.go.ke/ocds hung mcp-server-fetch
-            # twice (2026-10-12; 60-min runs, watchdog kills). Index is small fast
-            # JSON, live-verified. No wait_for around the anyio-backed call —
-            # LENS_WATCHDOG_SECS (demo) is the hang backstop.
-            url = "https://tenders.go.ke/api/ocds/index"
+            # Provenance page via the borrowed server. Default: OCP's data registry
+            # (static, tolerant, on-theme). tenders.go.ke hung mcp-server-fetch on
+            # its SPA page and 429'd its API after a day of probing (2026-10-12);
+            # override with LENS_FETCH_URL. No wait_for around the anyio-backed
+            # call — LENS_WATCHDOG_SECS (demo) is the hang backstop.
+            url = os.environ.get("LENS_FETCH_URL", "https://www.open-contracting.org/data/")
             try:
                 page = await self.fetch.call("fetch", url=url, max_length=2000)
                 excerpt = str(page.get("raw") or page.get("content") or page)[:500]
