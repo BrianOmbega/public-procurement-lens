@@ -30,7 +30,7 @@ SYNTH_SYSTEM = (
     "identifier; uncited findings are rejected by the validator. severity is one of "
     "low|medium|high|critical. Return ONLY JSON: {\"findings\": [{\"claim\": str, "
     '"evidence\": str, "severity\": str, "sources": [{"ocid": str, "field_path"?: str, '
-    '"quote"?: str}]}]}. The agent prepares the file; humans decide awards.'
+    '"quote"?: str}]}]}. Example (shape ONLY; the ocid shown is FAKE - yours must be copied verbatim from the inputs): {"findings": [{"claim": "Award X is a price outlier", "evidence": "2,400,000 KES vs median 495,000 across 4 comparables", "severity": "high", "sources": [{"ocid": "ocds-example-0001", "field_path": "awards[0].value.amount"}]}]}. The agent prepares the file; humans decide awards.'
 )
 
 _DEFAULT_CHECKS = ["price_analysis", "supplier_history", "data_quality"]
@@ -102,7 +102,8 @@ class OpenAICompatModel:
                       "messages": [{"role": "system", "content": system},
                                    {"role": "user", "content": user}],
                       "temperature": 0.1,
-                      "max_tokens": 1500})
+                      "max_tokens": 1500,
+                      "response_format": {"type": "json_object"}})
             r.raise_for_status()
             return r.json()["choices"][0]["message"]["content"]
 
@@ -139,8 +140,10 @@ class OpenAICompatModel:
         user = json.dumps(payload, default=str)[:7000]
         if feedback:
             user += ("\n\nYour previous findings were REJECTED by the citation validator: "
-                     + json.dumps(feedback)[:800] + "\nRepair them: every source ocid must "
-                     "appear verbatim in the inputs above.")
+                     + json.dumps(feedback)[:800]
+                     + "\nRepair them: (1) EVERY finding object MUST include a non-empty "
+                     "\"sources\" array; (2) every source ocid MUST appear verbatim in the "
+                     "inputs above; invent nothing.")
         out = await self._chat(SYNTH_SYSTEM, user)
         data = self._parse_json(out)
         findings = data.get("findings") if isinstance(data, dict) else data
