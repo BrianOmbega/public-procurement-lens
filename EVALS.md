@@ -12,7 +12,7 @@ Runners: `uv run pytest -q` (offline invariants) · `uv run lens-demo --validato
 | 6 | Messy data surfaced, not fatal | record with startDate > endDate → DQ note | **PASS** (stub selftest 11/11; mirrors real PPIP record `ocds-vn56pm-b60301c5…`) |
 | 7 | Audit completeness | every event model-attributed; gate events carry approver | **PASS** (1.7b run: 27/27 events `model=ollama/qwen3:1.7b`) |
 | 8 | Open-weights full task — qwen3:1.7b | exit 0 end-to-end, localhost-only, cited artifacts | **PASS** (36 min on 2-core/8GB; brief 2 citations / 4 ocid refs; flag approved) |
-| 9 | Open-weights full task — qwen3:4b | same as #8 | **IN PROGRESS** — attempt 1 timed out at 15m0s mid-synthesize under memory pressure (~1.8 tok/s); hardened in `61cd7f0` (2700s timeout, 900-token cap, trimmed prompt, watchdog); rerun in flight |
+| 9 | Open-weights full task - qwen3:4b | same as #8 | **PASS** - exit 0 in 28m (09:15:47-09:43:52Z); 30/30 audit events model-attributed; brief 7 ocid lines; flag `8b600466` approved citing subject `stub-0004`; first attempt died at 15m httpx timeout under memory pressure, hardened in `61cd7f0` |
 | 10 | Fresh-clone reproducibility | clone → `uv sync` → demo exit 0 | **PASS** (stranger-path dry run: validator-test + scripted demo, brief 7 citations, flag approved) |
 | 11 | Citation semantic grounding | cited source actually supports the claim | **FAIL — unfixed** (see below) |
 
