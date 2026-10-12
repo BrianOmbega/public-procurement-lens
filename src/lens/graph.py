@@ -110,7 +110,11 @@ class LensGraph:
             history = await self.bridge.call("get_supplier_history", supplier=supplier)
         provenance = None
         if self.fetch is not None:
-            url = "https://tenders.go.ke/ocds"
+            # Index API, not the SPA page: tenders.go.ke/ocds hung mcp-server-fetch
+            # twice (2026-10-12; 60-min runs, watchdog kills). Index is small fast
+            # JSON, live-verified. No wait_for around the anyio-backed call —
+            # LENS_WATCHDOG_SECS (demo) is the hang backstop.
+            url = "https://tenders.go.ke/api/ocds/index"
             try:
                 page = await self.fetch.call("fetch", url=url, max_length=2000)
                 excerpt = str(page.get("raw") or page.get("content") or page)[:500]

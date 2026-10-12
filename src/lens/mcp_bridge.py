@@ -23,7 +23,7 @@ from mcp.client.stdio import StdioServerParameters, stdio_client
 from lens.audit import audit_event
 
 DEFAULT_LENS_CMD = str(Path(sys.executable).parent / "lens-stub")
-DEFAULT_FETCH_CMD = "uvx mcp-server-fetch"
+DEFAULT_FETCH_CMD = f"{sys.executable} -m mcp_server_fetch"  # in-venv module exec: uvx launcher needs realpath (absent on macOS 12)
 
 
 def _text_of(result: Any) -> str:

@@ -18,7 +18,7 @@ import time
 import uuid
 from pathlib import Path
 
-from mcp.server.mcpserver import MCPServer
+from mcp.server.fastmcp import FastMCP
 from pydantic import ValidationError
 
 from lens.audit import audit_event, read_audit
@@ -48,7 +48,7 @@ from lens.schemas.contract import (
 )
 from lens.stubs.fixtures import FIXTURE_RELEASES
 
-mcp = MCPServer("lens-stub")
+mcp = FastMCP("lens-stub")
 OUTPUT_DIR = Path("output")
 
 _SUPPLIER_SUFFIXES = {"LTD", "LIMITED", "LLC", "CO", "COMPANY", "ENTERPRISES", "SUPPLIES", "SERVICES"}

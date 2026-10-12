@@ -76,7 +76,9 @@ async def _amain(args: argparse.Namespace) -> int:
             try:
                 fetch = await McpBridge(os.environ.get("LENS_FETCH_CMD", DEFAULT_FETCH_CMD),
                                         "fetch", model=model.name).__aenter__()
-            except Exception as e:
+            except BaseException as e:  # anyio cleanup can raise ExceptionGroup (BaseException)
+                if isinstance(e, (KeyboardInterrupt, SystemExit)):
+                    raise
                 print(f"[warn] borrowed fetch server unavailable ({str(e)[:140]}) — continuing without it")
                 fetch = None
         try:
@@ -125,7 +127,7 @@ def main() -> None:
     def _watchdog() -> None:
         # Last resort: anyio/MCP cleanup can deadlock on error paths (observed
         # live 2026-10-12: demo hung 40+ min after the LLM call timed out).
-        time.sleep(3600)
+        time.sleep(int(os.environ.get("LENS_WATCHDOG_SECS", "3600")))
         os._exit(2)
 
     threading.Thread(target=_watchdog, daemon=True).start()
