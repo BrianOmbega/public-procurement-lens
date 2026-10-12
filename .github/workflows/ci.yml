@@ -1,0 +1,23 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.11"
+      - name: Sync deps
+        run: uv sync
+      - name: Contract selftest (stub MCP, 5 tools)
+        run: uv run lens-stub --selftest
+      - name: Offline test suite
+        run: uv run pytest -q
+      - name: Gated demo end-to-end (scripted model)
+        run: uv run lens-demo --approve "CI Reviewer"
