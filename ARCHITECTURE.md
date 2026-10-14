@@ -33,3 +33,9 @@
 - **In-memory checkpointer**: cross-process gate resume needs SqliteSaver (path is clear, not built).
 - **Stub corpus**: real PPIP ingestion (ijson-streamed OCDS → SQLite) is a teammate workstream behind the same contract; the messiness (invalid dates, missing buyers, broken supplier IDs) is already fixture-encoded.
 - **Item matching** is substring-based; a real corpus needs embeddings or a normalized taxonomy.
+
+## TypeScript API workspace
+
+The separate TypeScript implementation lives under `apps/procurement-mcp`, `apps/agent-runner`, and `packages/contracts`. The MCP service provides health checks, tool calls, and JSONL audit/report persistence; the local runner posts audit events to that service. It is not yet wired to the Python graph or its MCP implementation.
+
+This workspace remains scaffold-level in two important areas: its source fetch and model adapters return synthetic data, and the HTTP service has no authentication middleware. The API smoke test proves route behavior and runner-to-backend audit transport only; it does not establish production readiness or genuine source/model integration.

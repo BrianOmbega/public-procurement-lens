@@ -1,0 +1,23 @@
+{
+  "name": "public-procurement-lens",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm --prefix packages/contracts run build && npm --prefix apps/procurement-mcp run build && npm --prefix apps/agent-runner run build",
+    "test": "vitest run",
+    "dev:procurement": "npm --prefix apps/procurement-mcp run dev",
+    "dev:runner": "npm --prefix apps/agent-runner run dev"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}

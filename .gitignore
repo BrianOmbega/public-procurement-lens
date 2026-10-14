@@ -18,6 +18,11 @@ venv/
 
 # Node
 node_modules/
+dist/
+coverage/
+apps/**/dist/
+packages/**/dist/
+apps/**/data/*.jsonl
 
 # OS / editor
 .DS_Store
