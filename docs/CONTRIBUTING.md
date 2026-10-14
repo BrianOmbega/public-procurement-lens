@@ -14,7 +14,7 @@ Proposed team workflow — pending confirmation from @BrianOmbega.
 | `main` | seed: license, pyproject, contract, docs, stub | proposed: njoki's scaffold |
 | `contrib/orchestration` | LangGraph graph, models layer, audit, demo | njoki |
 | `contrib/open-weights-run` | Ollama/Qwen local task run + evidence | njoki |
-| `contrib/mcp-server` | real lens-mcp + ingest pipeline | teammate (TBD) |
+| `contrib/mcp-server` | real lens-mcp + ingest pipeline | njoki — **built & merged to `main`** (`15590e1`, `d6bb587`, `a6ca35e`) |
 
 ## Lanes
 
@@ -22,7 +22,7 @@ Proposed team workflow — pending confirmation from @BrianOmbega.
 |---|---|
 | Repo, submission, demo video | Brian |
 | Orchestration + open-weights task (requirements 1 & 2) | njoki |
-| lens-mcp server + data ingest (requirements 3 & 4 wiring) | teammate (TBD) |
+| lens-mcp server + data ingest (requirements 3 & 4 wiring) | njoki — **built** (`lens-ingest` + `lens-mcp`, selftest 15/15, full-graph demo green via `LENS_MCP_CMD`) |
 | Tool contract (`docs/CONTRACT.md` + `src/lens/schemas/`) | shared — changes via PR pinging both builders |
 
 ## Dev setup
