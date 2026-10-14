@@ -1,6 +1,6 @@
 # lens-mcp Tool Contract — v0.1.0
 
-**Status: PROPOSED** (needs review by @BrianOmbega + the MCP-server builder).
+**Status: IMPLEMENTED v0.1.0** — the real `lens-mcp` (`src/lens/mcp_server.py`) now implements this contract over the SQLite corpus, alongside the stub; `lens-mcp --selftest` verifies all 5 tools + the citation/gate/audit invariants. Schema is still `0.x` (no breaking change yet). Review by @BrianOmbega still welcome.
 Machine-readable source of truth: `src/lens/schemas/contract.py` (pydantic models). If this doc and the module disagree, the module wins; fix the doc by PR.
 
 ## Why this file exists
@@ -51,8 +51,10 @@ Kenya PPIP data is messy by design. Servers MUST:
 
 `CONTRACT_VERSION` in `contract.py` (semver, `0.x` until merged reality). Breaking change → bump in the same PR that changes schemas; stub and real server update together.
 
-## Open questions for Brian / teammate
+## Open questions — RESOLVED (2026-10-14, real server built)
 
-1. Real-server storage: SQLite built from bulk FY downloads (server ignores `Range`; sizes unknown until download → stream-parse with `ijson`)? Agreed?
-2. Fiscal-year key format: portal uses `YYYY/YYYY` (e.g. `2026/2027`); fixtures currently use the same string. Standardise on that everywhere?
-3. Who owns the ingest pipeline (the data half the README must declare)?
+The real `lens-mcp` + `lens-ingest` are now in-repo (`src/lens/mcp_server.py`, `src/lens/ingest.py`), so the three open questions are answered by the shipped code:
+
+1. **Real-server storage** — RESOLVED: SQLite (`data/lens.sqlite`) built by `lens-ingest` from OCDS packages. `stream_package` parses with `ijson.items(resp.raw, "releases.item")` so a full FY download (~109k awards) is streamed, never buffered into this machine's 8 GB RAM; the server opens the db **read-only** (`mode=ro`) and never writes it. It ignores `Range` and makes one polite request with no retry loop (`tenders.go.ke` 429s under probing — repo history, 2026-10-12). Exactly the design proposed here.
+2. **Fiscal-year key format** — RESOLVED: standardised on the portal's `YYYY/YYYY` string everywhere. `extract_row` takes `release.fiscal_year` when present and otherwise derives it from the award/release date via `fy_from_date` (Kenya FY = July–June), so a missing field never yields a null FY key.
+3. **Ingest-pipeline ownership** — RESOLVED: built and owned in-repo by njoki (commits `15590e1` lens-ingest, `d6bb587` lens-mcp, `a6ca35e` parity/wire tests), no longer a teammate-TBD lane. The README declares this data half; `docs/CONTRIBUTING.md` lanes updated to match.
