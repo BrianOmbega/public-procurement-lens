@@ -33,7 +33,7 @@ Optional frontier comparison: set `OPENAI_BASE_URL` + `OPENAI_API_KEY` and `MODE
 | Requirement | Implementation |
 |---|---|
 | Open-source orchestration | LangGraph (MIT), explicit nodes: plan → retrieve → analyze → synthesize → self-check ⇄ repair ≤2 → human gate → finalize (`src/lens/graph.py`) |
-| Own MCP server, 3+ tools, ≥1 action | `lens-mcp` contract v0.1: 5 tools — 3 read + 2 action (`draft_committee_brief`, `raise_flag`). Stub today (`src/lens/stubs/`), real server swaps via `LENS_MCP_CMD` (`docs/CONTRACT.md`) |
+| Own MCP server, 3+ tools, ≥1 action | `lens-mcp` contract v0.1: 5 tools — 3 read + 2 action (`draft_committee_brief`, `raise_flag`). Real server built (`src/lens/mcp_server.py`, ijson-streamed SQLite corpus via `lens-ingest`); swaps in with zero graph changes via `LENS_MCP_CMD=.venv/bin/lens-mcp` (`docs/CONTRACT.md`) |
 | One MCP server you didn't write | Official `mcp-server-fetch` (`--with-fetch`). Why it beats writing it: maintained by the MCP project — redirects, robots, encoding handled — so the agent cites regulation text and portal pages live without us shipping a fragile scraper |
 | One full task on an open-weights model | Ollama + Qwen3, fully local. qwen3:1.7b pass verified end-to-end (exit 0, 27/27 audit events model-attributed, localhost only) — `EVALS.md` rows 8-9 |
 | Every action logged, every irreversible action gated | `logs/audit.jsonl` + named-approver `interrupt()` gate; flags stay `pending_approval` without one |
@@ -41,14 +41,22 @@ Optional frontier comparison: set `OPENAI_BASE_URL` + `OPENAI_API_KEY` and `MODE
 ## Development
 
 ```bash
-uv sync && uv run pytest -q     # offline suite: validator, gate, audit invariants
-uv run lens-stub --selftest     # MCP contract selftest (5 tools, 11 checks)
+uv sync && uv run pytest -q     # offline suite: validator, gate, audit, ingest, stub↔real parity
+
+uv run lens-stub --selftest     # MCP contract selftest over fixtures (stub server)
+uv run lens-ingest --from-fixtures   # seed data/lens.sqlite (offline corpus, no network)
+uv run lens-mcp --selftest      # real server selftest against data/lens.sqlite (5 tools, 15 checks)
+
+# prove the zero-graph-change stub→real swap end to end (real server over stdio):
+LENS_MCP_CMD=.venv/bin/lens-mcp uv run lens-demo --approve "Your Name"
 ```
 
-Layout: `src/lens/` (graph, models, mcp_bridge, audit, schemas, stubs) · `docs/` (CONTRACT, ARCHITECTURE, EVALS, CONTRIBUTING, DESIGN, description) · `tests/` · `scripts/`.
+Ingest a live/local OCDS package instead of fixtures: `uv run lens-ingest data/package.json` or `uv run lens-ingest "https://tenders.go.ke/api/ocds/…"` (ijson-streamed; a full FY download never has to fit in RAM).
 
-## Status (2026-10-12)
+Layout: `src/lens/` (graph, models, mcp_bridge, audit, schemas, stubs, ingest, analysis, actions, mcp_server) · `docs/` (CONTRACT, CONTRIBUTING, DESIGN, description, PR-STATUS) · `ARCHITECTURE.md`, `EVALS.md` (repo root) · `tests/` · `scripts/`.
 
-Orchestration + open-weights slice green (qwen3:1.7b verified exit 0; qwen3:4b attempts failed on infra limits of this 8 GB machine - see EVALS.md row 9). Real `lens-mcp` over Kenya PPIP ingestion is a teammate workstream — contract-first design makes stub ↔ real a config change. Submission deadline: 2026-10-15.
+## Status (2026-10-14)
+
+Orchestration + open-weights slice green (qwen3:1.7b verified exit 0; qwen3:4b attempts failed on infra limits of this 8 GB machine - see EVALS.md row 9). The real `lens-mcp` server and its `lens-ingest` pipeline (ijson-streamed OCDS → SQLite, DQ flags + provenance) are now built in-repo: `lens-mcp --selftest` passes 15/15 against `data/lens.sqlite`, and the full graph runs against the real server with zero graph-code changes via `LENS_MCP_CMD`. Contract-first design made stub ↔ real a config change, as intended. Submission deadline: 2026-10-15.
 
 License: MIT.
