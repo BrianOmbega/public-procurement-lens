@@ -86,6 +86,9 @@ document.getElementById('run').addEventListener('click', async () => {
 </main></body></html>`;
 
 app.get('/', (_req: Request, res: Response) => {
+  // No caching: without this Express sends only an ETag, browsers apply
+  // heuristic freshness, and a stale copy of this page keeps serving old JS.
+  res.set('Cache-Control', 'no-store, must-revalidate');
   res.status(200).type('html').send(INDEX_HTML);
 });
 
