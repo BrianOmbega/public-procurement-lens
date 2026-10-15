@@ -35,10 +35,17 @@ class McpBridge:
 
     def __init__(self, command: str, server_name: str, model: str = "unset") -> None:
         parts = shlex.split(command)
-        self._params = StdioServerParameters(command=parts[0], args=parts[1:],
-                                             env=dict(os.environ), cwd=str(Path.cwd()))
         self.server_name = server_name
         self.model = model
+        env = dict(os.environ)
+        # The server runs in a subprocess and cannot see the graph's model
+        # object, so its own audit events would be attributed to "unset". Pass
+        # the identity through the environment: lens.audit reads LENS_MODEL
+        # first, so every server-side event names the same brain as the run.
+        if model and model != "unset":
+            env["LENS_MODEL"] = model
+        self._params = StdioServerParameters(command=parts[0], args=parts[1:],
+                                             env=env, cwd=str(Path.cwd()))
         self._stdio_cm: Any = None
         self._sess_cm: Optional[ClientSession] = None
         self._session: Optional[ClientSession] = None
@@ -61,8 +68,13 @@ class McpBridge:
         assert self._session is not None, "bridge used outside async-with"
         result = await self._session.call_tool(tool, args)
         payload = self._unwrap(result)
+        # Lift the approver to the top level of the client-side event as well.
+        # The server already records it there; without this the same logical
+        # action produces two events with different shapes, and an auditor
+        # filtering on .approver would see only half of every gated write.
         audit_event(tool=f"{self.server_name}:{tool}", request=args, response=payload,
-                    kind="mcp_call", model=self.model, server=self.server_name)
+                    kind="mcp_call", model=self.model, server=self.server_name,
+                    approver=args.get("approver"))
         return payload
 
     @staticmethod

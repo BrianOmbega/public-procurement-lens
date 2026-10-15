@@ -19,6 +19,7 @@ lens-stub = "lens.stubs.stub_mcp:main"
 lens-mcp = "lens.mcp_server:main"
 lens-ingest = "lens.ingest:main"
 lens-demo = "lens.demo:main"
+lens-audit = "lens.audit_cli:main"
 
 [dependency-groups]
 dev = [
