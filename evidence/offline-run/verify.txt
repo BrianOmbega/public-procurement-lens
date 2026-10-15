@@ -1,0 +1,35 @@
+lens-audit verify — evidence/offline-run/audit.jsonl (18 events) vs evidence/offline-run
+  [PASS] schema: every event has ts/kind/tool/model/session/request/response
+  [PASS] timestamps: UTC ISO, monotonic (18/18 parsed)
+  [PASS] model: every event attributed to a known model
+  [PASS] gate: all 4 irreversible-action events carry a valid named human
+  [PASS] artifacts: 1 brief(s) + 1 flag(s) all map to an event, and vice versa
+
+VERIFY PASSED — every action logged with inputs, outputs, timestamps and model; every irreversible action gated on a named human
+
+lens-audit summary — evidence/offline-run/audit.jsonl
+  events      : 18   span 2026-10-15T17:45:20Z → 2026-10-15T17:45:21Z
+  by kind     : {'run': 1, 'node': 5, 'tool_call': 5, 'mcp_call': 5, 'validation': 1, 'human_gate': 1}
+  by model    : {'scripted': 18}
+  gate states : {'approved': 3}
+  approvers   : ['Njoki Mwangi']
+  sessions    : ['local']
+  tool calls  :
+         1  demo_start
+         1  plan
+         1  search_awards
+         1  lens-mcp:search_awards
+         1  get_supplier_history
+         1  lens-mcp:get_supplier_history
+         1  retrieve
+         1  analyze_price
+         1  lens-mcp:analyze_price
+         1  analyze
+         1  synthesize
+         1  self_check
+         1  human_gate
+         1  draft_committee_brief
+         1  lens-mcp:draft_committee_brief
+         1  raise_flag
+         1  lens-mcp:raise_flag
+         1  finalize

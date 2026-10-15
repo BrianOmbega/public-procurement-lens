@@ -1,0 +1,53 @@
+[10/15/26 20:45:20] INFO     Processing request of type            server.py:733
+                             CallToolRequest                                    
+[10/15/26 20:45:21] INFO     Processing request of type            server.py:733
+                             ListToolsRequest                                   
+                    INFO     Processing request of type            server.py:733
+                             CallToolRequest                                    
+                    INFO     Processing request of type            server.py:733
+                             CallToolRequest                                    
+                    INFO     Processing request of type            server.py:733
+                             CallToolRequest                                    
+                    INFO     Processing request of type            server.py:733
+                             CallToolRequest                                    
+lens-demo — subject=ocds-vn56pm-stub-0004 task=price_reasonableness model=scripted thread=demo-20261015-204511
+
+=== HUMAN GATE — run paused ===
+{
+  "question": "Approve finalizing the committee brief and flags? The agent never awards; this only prepares the file.",
+  "subject_ocid": "ocds-vn56pm-stub-0004",
+  "task": "price_reasonableness",
+  "model": "scripted",
+  "findings": [
+    {
+      "claim": "Award ocds-vn56pm-stub-0004 is a price outlier versus comparable awards",
+      "severity": "high",
+      "sources": [
+        "ocds-vn56pm-stub-0004"
+      ]
+    },
+    {
+      "claim": "Supplier 'Bluebird Supplies Ltd' holds 3 corpus awards under 1 name variants",
+      "severity": "medium",
+      "sources": [
+        "ocds-vn56pm-stub-0004",
+        "ocds-vn56pm-stub-0009",
+        "ocds-vn56pm-stub-0010"
+      ]
+    },
+    {
+      "claim": "Source data contains integrity defects that must be resolved before any award decision",
+      "severity": "medium",
+      "sources": [
+        "ocds-vn56pm-stub-0003",
+        "ocds-vn56pm-b60301c5-9058-4118-a31e-939970e0e4c5",
+        "ocds-vn56pm-stub-0006"
+      ]
+    }
+  ],
+  "resume_with": "{\"approved\": true, \"approver\": \"<full name>\"}"
+}
+
+=== FINALIZED (task=price_reasonableness, model=scripted) ===
+brief: evidence/offline-run/brief-20261015-204521.md (citations: 7, findings: 3)
+flag fd26b0d9: approved — evidence/offline-run/flags.jsonl
