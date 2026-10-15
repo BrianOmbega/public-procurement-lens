@@ -1,0 +1,33 @@
+services:
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: procurement-azurite
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+    command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0"
+    volumes:
+      - ./data:/data
+
+  procurement-mcp:
+    build:
+      context: ./apps/procurement-mcp
+    container_name: procurement-mcp
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      MCP_TRANSPORT: streamable-http
+      STORAGE_CONNECTION_STRING: UseDevelopmentStorage=true
+      NODE_ENV: development
+    depends_on:
+      - azurite
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: procurement-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./data/ollama:/root/.ollama

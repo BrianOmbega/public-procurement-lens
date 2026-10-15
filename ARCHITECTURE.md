@@ -36,3 +36,9 @@
 - **In-memory checkpointer**: cross-process gate resume needs SqliteSaver (path is clear, not built).
 - **Corpus is fixtures, not live PPIP**: the real ingest (`ingest.py`, ijson-streamed OCDS → SQLite) and real server (`mcp_server.py`) are built and pass `lens-mcp --selftest` (15/15); the *seeded* corpus is still the offline fixture set (`--from-fixtures`, 10 releases), because `tenders.go.ke` bulk downloads 429 under probing (repo history, 2026-10-12). Pointing `lens-ingest` at a real FY package is a one-command swap behind the same contract — no code change. The messiness (invalid dates, missing buyers, broken supplier IDs) is already fixture-encoded.
 - **Item matching** is substring-based; a real corpus needs embeddings or a normalized taxonomy.
+
+## TypeScript API workspace
+
+The separate TypeScript implementation lives under `apps/procurement-mcp`, `apps/agent-runner`, and `packages/contracts`. The MCP service provides health checks, tool calls, and JSONL audit/report persistence; the local runner posts audit events to that service. It is not yet wired to the Python graph or its MCP implementation.
+
+This workspace remains scaffold-level in two important areas: its source fetch and model adapters return synthetic data, and the HTTP service has no authentication middleware. The API smoke test proves route behavior and runner-to-backend audit transport only; it does not establish production readiness or genuine source/model integration.

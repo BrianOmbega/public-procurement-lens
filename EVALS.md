@@ -31,3 +31,13 @@ What we'd try next, cheapest first:
 ## Variance note (open-weights runs)
 
 Single-seed results so far. Planned before submission: 3 runs per model at temperature 0.1, reporting finding-set consistency (rows 8-9 rerun); the scripted model is the deterministic control (0 variance by construction).
+
+## TypeScript API smoke checks (2026-10-11)
+
+These checks cover the separate TypeScript service workspace and are not Python graph or model-evaluation results.
+
+- `npm run build`: passed for contracts, MCP service, and agent runner.
+- `npm test`: 6 tests passed.
+- HTTP smoke checks: `GET /healthz` and `GET /readyz` returned 200; MCP initialization and all three tool calls returned 200; `POST /api/audit-events` returned 202.
+- The local runner completed against the live service and its audit event was persisted in the service's JSONL log.
+- Source retrieval and model inference remain synthetic adapters. No frontend exists in the API-only plan, and no genuine model run is claimed by these checks.

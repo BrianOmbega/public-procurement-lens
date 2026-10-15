@@ -59,4 +59,19 @@ Layout: `src/lens/` (graph, models, mcp_bridge, audit, schemas, stubs, ingest, a
 
 Orchestration + open-weights slice green (qwen3:1.7b verified exit 0; qwen3:4b attempts failed on infra limits of this 8 GB machine - see EVALS.md row 9). The real `lens-mcp` server and its `lens-ingest` pipeline (ijson-streamed OCDS → SQLite, DQ flags + provenance) are now built in-repo: `lens-mcp --selftest` passes 15/15 against `data/lens.sqlite`, and the full graph runs against the real server with zero graph-code changes via `LENS_MCP_CMD`. Contract-first design made stub ↔ real a config change, as intended. Submission deadline: 2026-10-15.
 
+## TypeScript service workspace
+
+The repository also contains an API-only TypeScript workspace under `apps/` and `packages/`. It is additive to the Python implementation above; the two implementations currently have separate runtime paths and evaluation status.
+
+```bash
+npm install
+npm run build
+npm test
+npm run dev:procurement
+```
+
+The procurement MCP service listens on `http://localhost:3000` and exposes `GET /healthz`, `GET /readyz`, `POST /mcp`, and `POST /api/audit-events`. The local runner can be started with `npm run dev:runner` while the service is running.
+
+The TypeScript runner's source retrieval and model adapters currently return synthetic results, and the service does not yet implement authentication. Do not treat this workspace as production-ready or as evidence of a genuine model run. There is no frontend; the TypeScript plan is API-only.
+
 License: MIT.
