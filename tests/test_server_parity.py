@@ -83,12 +83,19 @@ def test_price_analysis_parity(seeded):
 
 
 def test_action_tool_parity(seeded):
+    # Gate is checked BEFORE citations, so an unauthorised caller gets
+    # approval_required rather than citation feedback.
     uncited = [{"claim": "c", "evidence": "e", "sources": []}]
     bad_s = stub_mcp.draft_committee_brief(title="t", findings=uncited)
     bad_r = mcp_server.draft_committee_brief(title="t", findings=uncited)
-    assert bad_s == bad_r and bad_s["code"] == "citation_required"
+    assert bad_s == bad_r and bad_s["code"] == "approval_required"
 
     src = {"ocid": "ocds-vn56pm-stub-0004", "field_path": "awards[0].value.amount"}
+    # With a valid named approver, the citation rule is what rejects it.
+    bad2_s = stub_mcp.draft_committee_brief(title="t", findings=uncited, approver="Test Approver")
+    bad2_r = mcp_server.draft_committee_brief(title="t", findings=uncited, approver="Test Approver")
+    assert bad2_s == bad2_r and bad2_s["code"] == "citation_required"
+
     kwargs = {"category": "price_outlier", "severity": "high", "claim": "c", "evidence": "e",
               "subject_ocids": ["ocds-vn56pm-stub-0004"], "sources": [src],
               "recommended_action": "a"}
@@ -100,6 +107,46 @@ def test_action_tool_parity(seeded):
     lines = (seeded.parent / "output" / "flags.jsonl").read_text(encoding="utf-8").splitlines()
     assert len(lines) == 2
     assert all(json.loads(x)["status"] == "pending_approval" for x in lines)
+
+
+def test_gated_brief_refuses_without_named_human(seeded, tmp_path, monkeypatch):
+    """Requirement: a gate on every irreversible action. draft_committee_brief
+    writes to disk, so it must refuse — and write nothing — without a valid
+    named human approver. Identical behaviour on stub and real server."""
+    out = tmp_path / "gated"
+    monkeypatch.setenv("LENS_OUTPUT", str(out))
+    cited = [{"claim": "c", "evidence": "e", "severity": "high",
+              "sources": [{"ocid": "ocds-vn56pm-stub-0004"}]}]
+
+    for server in (stub_mcp, mcp_server):
+        for bad_approver, expected in ((None, "approval_required"),
+                                       ("", "approval_required"),
+                                       ("auto", "approver_invalid"),
+                                       ("x", "approver_invalid"),
+                                       ("ollama/qwen3:1.7b", "approver_invalid")):
+            r = server.draft_committee_brief(title="t", findings=cited, approver=bad_approver)
+            assert r["code"] == expected, (server.__name__, bad_approver, r)
+    assert not out.exists() or not any(out.iterdir()), "refused call must not write a brief"
+
+    ok_s = stub_mcp.draft_committee_brief(title="t", findings=cited, approver="Test Approver")
+    ok_r = mcp_server.draft_committee_brief(title="t", findings=cited, approver="Test Approver")
+    assert ok_s["citation_count"] == ok_r["citation_count"] == 1
+    assert ok_s["approver"] == ok_r["approver"] == "Test Approver"
+
+
+def test_model_cannot_approve_its_own_flag(seeded, monkeypatch):
+    """The acting model passing its own name as approver must not promote a
+    flag to approved."""
+    monkeypatch.setenv("MODEL", "ollama/qwen3:1.7b")
+    src = {"ocid": "ocds-vn56pm-stub-0004"}
+    kwargs = {"category": "price_outlier", "severity": "high", "claim": "c", "evidence": "e",
+              "subject_ocids": ["ocds-vn56pm-stub-0004"], "sources": [src],
+              "recommended_action": "a"}
+    for bad in ("ollama/qwen3:1.7b", "qwen3:1.7b", "auto", "agent"):
+        r = mcp_server.raise_flag(**kwargs, approver=bad)
+        assert r["code"] == "approver_invalid", (bad, r)
+    good = mcp_server.raise_flag(**kwargs, approver="Jane Mwikali")
+    assert good["status"] == "approved"
 
 
 def test_missing_corpus_is_structured_not_fatal(seeded, monkeypatch):

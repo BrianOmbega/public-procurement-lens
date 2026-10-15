@@ -26,7 +26,7 @@ from langgraph.types import interrupt
 from pydantic import ValidationError
 
 from lens.audit import audit_event
-from lens.schemas.contract import Finding
+from lens.schemas.contract import Finding, approver_violation
 
 MAX_REPAIRS = 2
 
@@ -205,14 +205,24 @@ class LensGraph:
         })
         approved = bool(decision.get("approved")) if isinstance(decision, dict) else False
         approver = (decision.get("approver") if isinstance(decision, dict) else None) or None
+        # "A named human approving" is a requirement, so the identity is
+        # validated rather than trusted: blanks, automation tokens and the
+        # acting model's own name are all refused here AND at the tool boundary.
+        model_name = state.get("model") or self.model.name
+        violation = approver_violation(approver, model=model_name) if approved else "not_approved"
+        gate_state = "approved" if not violation else ("rejected" if violation == "not_approved"
+                                                       else f"refused:{violation}")
         audit_event(tool="human_gate", kind="human_gate",
-                    model=state.get("model") or self.model.name, task=state.get("task"),
+                    model=model_name, task=state.get("task"),
                     request={"n_findings": len(summary)},
-                    response={"approved": approved, "approver": approver},
-                    approver=approver, gate="approved" if approved else "rejected")
-        if not approved or not approver:
-            return {"gate": {"approved": False},
-                    "error": "human gate: rejected or missing named approver"}
+                    response={"approved": approved, "approver": approver,
+                              "violation": violation},
+                    approver=approver, gate=gate_state)
+        if violation:
+            reason = ("rejected by the approver" if violation == "not_approved"
+                      else f"approver refused ({violation}) — a named human is required")
+            return {"gate": {"approved": False, "violation": violation},
+                    "error": f"human gate: {reason}"}
         return {"gate": {"approved": True, "approver": approver}}
 
     def route_after_gate(self, state: LensState) -> str:
@@ -226,7 +236,13 @@ class LensGraph:
             title=f"Price reasonableness review — {subject.get('tender_title') or state.get('subject_ocid')}",
             findings=state.get("findings") or [],
             subject_ocids=[state.get("subject_ocid")],
-            context=(state.get("analysis") or {}).get("subject_assessment") or "")
+            context=(state.get("analysis") or {}).get("subject_assessment") or "",
+            approver=gate.get("approver"))
+        if brief.get("code"):  # gate refused at the tool boundary — do not raise flags either
+            self._audit_node("finalize", state, brief_error=brief.get("code"),
+                             detail=str(brief.get("message"))[:200])
+            return {"error": f"draft_committee_brief refused: {brief.get('code')}: "
+                             f"{brief.get('message')}"}
         flags = []
         for f in state.get("findings") or []:
             if f.get("severity") in ("high", "critical"):

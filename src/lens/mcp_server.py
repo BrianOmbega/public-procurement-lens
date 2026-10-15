@@ -251,10 +251,14 @@ def analyze_price(item_query: str, buyer: str | None = None,
 
 @mcp.tool()
 def draft_committee_brief(title: str, findings: list[dict],
-                          subject_ocids: list[str] | None = None, context: str = "") -> dict:
-    """ACTION: writes a cited markdown brief to output/. Findings without sources are rejected."""
+                          subject_ocids: list[str] | None = None, context: str = "",
+                          approver: str | None = None) -> dict:
+    """ACTION (gated): writes a cited markdown brief to output/. Requires a NAMED HUMAN
+    approver — refused with approval_required/approver_invalid otherwise, nothing written.
+    Findings without sources are rejected with citation_required."""
     return _actions.draft_committee_brief(title=title, findings=findings,
-                                          subject_ocids=subject_ocids, context=context)
+                                          subject_ocids=subject_ocids, context=context,
+                                          approver=approver)
 
 
 @mcp.tool()
@@ -273,6 +277,8 @@ def _selftest() -> int:
     print(f"lens-mcp selftest — contract {CONTRACT_VERSION}, corpus: SQLite "
           f"({len(TOOL_NAMES)} tools: {len(TOOL_NAMES) - len(ACTION_TOOLS)} read, {len(ACTION_TOOLS)} action)")
     tmp = Path(tempfile.mkdtemp(prefix="lens-mcp-selftest-"))
+    # Artifacts land in the temp dir, never the live output/ (LENS_OUTPUT).
+    os.environ["LENS_OUTPUT"] = str(tmp / "out")
     before = len(read_audit())
     failures: list[str] = []
 
@@ -316,18 +322,31 @@ def _selftest() -> int:
     check("thin pool -> no_comparables", r3b.get("code") == "no_comparables")
 
     bad = draft_committee_brief(title="t", findings=[{"claim": "c", "evidence": "e", "sources": []}])
-    check("uncited finding rejected (citation_required)", bad.get("code") == "citation_required",
-          str(bad)[:200])
+    check("brief GATED: no named approver -> approval_required (nothing written)",
+          bad.get("code") == "approval_required", str(bad)[:200])
 
     ocid, src = "ocds-vn56pm-stub-0004", {"ocid": "ocds-vn56pm-stub-0004", "field_path": "awards[0].value.amount"}
+    bot = draft_committee_brief(title="t", findings=[{"claim": "c", "evidence": "e",
+                                                      "severity": "high", "sources": [src]}],
+                                approver="auto")
+    check("automation token refused as approver -> approver_invalid",
+          bot.get("code") == "approver_invalid", str(bot)[:200])
+
+    uncited = draft_committee_brief(title="t", findings=[{"claim": "c", "evidence": "e",
+                                                          "sources": []}],
+                                    approver="Njoki (selftest)")
+    check("uncited finding rejected (citation_required)",
+          uncited.get("code") == "citation_required", str(uncited)[:200])
+
     r4 = draft_committee_brief(
         title="Price reasonableness review — patient monitors",
         findings=[{"claim": "Award value is ~5x the comparable median",
                    "evidence": "KES 2,400,000 vs median ~KES 495,000 across 4 comparables",
                    "severity": "high", "sources": [src]}],
-        subject_ocids=[ocid])
-    check("brief drafted with citation", r4.get("citation_count", 0) >= 1
-          and Path(r4.get("brief_path", "")).exists(), str(r4)[:200])
+        subject_ocids=[ocid], approver="Njoki (selftest)")
+    check("brief drafted with citation once a named human approves",
+          r4.get("citation_count", 0) >= 1 and Path(r4.get("brief_path", "")).exists()
+          and r4.get("approver") == "Njoki (selftest)", str(r4)[:200])
 
     r5 = raise_flag(category="price_outlier", severity="high", claim="~5x median price",
                     evidence="analyze_price robust z >= +3 vs 4 comparables",
