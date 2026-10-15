@@ -187,8 +187,20 @@ npm test
 npm run dev:procurement
 ```
 
-The procurement MCP service listens on `http://localhost:3000` and exposes `GET /healthz`, `GET /readyz`, `POST /mcp`, and `POST /api/audit-events`. The local runner can be started with `npm run dev:runner` while the service is running.
+The procurement MCP service listens on `http://localhost:3000` and exposes `GET /` (diagnostic index), `GET /healthz`, `GET /readyz`, `POST /mcp`, and `POST /api/audit-events`. The local runner can be started with `npm run dev:runner` while the service is running.
 
-The TypeScript runner's source retrieval and model adapters currently return synthetic results, and the service does not yet implement authentication. Do not treat this workspace as production-ready or as evidence of a genuine model run. There is no frontend; the TypeScript plan is API-only.
+Open `http://localhost:3000/` in a browser for a self-contained index page that lists every route and carries a working **Try the MCP search tool** button: it fires a live `tools/call` for `search_historical_awards` and renders the JSON response in the page. Useful endpoints to check by hand:
+
+```bash
+curl -s localhost:3000/healthz
+curl -s -X POST localhost:3000/mcp -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":"1","method":"tools/call","params":{"name":"search_historical_awards","arguments":{"query":"water"}}}'
+```
+
+Tool names use **underscores** (`search_historical_awards`, `compare_comparable_prices`, `draft_committee_report`), and `query` is required for search: `{}` or `{"limit":2}` returns `VALIDATION_ERROR`. Most queries match nothing in the fixture corpus; `water` and `supply` do.
+
+⚠️ Run **exactly one** watcher. `npm run dev:procurement` and `npm run dev -w @procurement/procurement-mcp` both start `tsx watch` on the same file and port; two supervisors racing on `:3000` produce intermittent `Cannot GET /` and stale responses. Kill strays with `pkill -f "tsx watch src/index.ts"` before restarting, and use `nohup ... &` if the server must outlive the shell.
+
+The TypeScript runner's source retrieval and model adapters currently return synthetic results, and the service does not yet implement authentication. Do not treat this workspace as production-ready or as evidence of a genuine model run. The workspace is API-only apart from the diagnostic index page at `/`, which exists to make the endpoints inspectable in a browser; it is not a product frontend.
 
 License: MIT.
