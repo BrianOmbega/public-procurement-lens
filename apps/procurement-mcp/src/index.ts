@@ -77,7 +77,7 @@ document.getElementById('run').addEventListener('click', async () => {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ jsonrpc: '2.0', id: '1', method: 'tools/call',
-        params: { name: 'search_historical_awards', arguments: { query: 'water' } })
+        params: { name: 'search_historical_awards', arguments: { query: 'water' } } })
     });
     out.textContent = 'HTTP ' + r.status + '\\n' + JSON.stringify(await r.json(), null, 2);
   } catch (e) { out.textContent = 'Error: ' + e.message; }
