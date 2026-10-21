@@ -1,0 +1,83 @@
+%%{init: {"theme":"base","themeVariables":{"fontSize":"34px","fontFamily":"Helvetica, Arial, sans-serif"}}}%%
+%% Public Procurement Lens - submission architecture diagram (legibility pass)
+%% Detail lives in local/diagram/README.md, not in these labels.
+flowchart TB
+
+subgraph DATA["Data sources"]
+  OCDS["OCDS release packages<br/>Kenya PPIP"]
+  DB[("SQLite corpus<br/>opened READ-ONLY")]
+end
+
+subgraph WIRE["MCP client/server"]
+  BRIDGE["McpBridge<br/>the MCP client"]
+  LENS["lens-mcp<br/>OURS - real"]
+  STUB["lens-stub<br/>OURS - CI default"]
+  FETCH["mcp-server-fetch<br/>BORROWED - official"]
+end
+
+subgraph TOOLS["MCP tools/resources"]
+  READ["3 READ tools<br/>search_awards<br/>get_supplier_history<br/>analyze_price"]
+  ACT["2 ACTION tools - GATED<br/>draft_committee_brief<br/>raise_flag"]
+  NORES["resources and prompts: NONE<br/>deliberate"]
+end
+
+subgraph AGENT["Agents"]
+  LG["LensGraph - ONE agent<br/>LangGraph StateGraph<br/>8 nodes, 4 routers"]
+  CHK["self_check rejects uncited work<br/>repair loop, max 2<br/>then HARD FAIL"]
+end
+
+subgraph MODEL["LLMs/models"]
+  GM["get_model()<br/>temperature 0.1"]
+  OW["Ollama qwen3:1.7b<br/>OPEN-WEIGHTS, local"]
+  FR["OpenAI-compatible<br/>frontier model"]
+end
+
+subgraph EXT["External APIs"]
+  OCP["open-contracting.org<br/>fetched via borrowed server"]
+  PORTAL["tenders.go.ke<br/>citation URLs only<br/>NEVER fetched"]
+end
+
+subgraph HITL["Human-in-the-loop"]
+  GATE["interrupt()<br/>suspends the graph"]
+  NAME["approver_violation()<br/>requires a NAMED HUMAN<br/>rejects model self-approval"]
+end
+
+subgraph OUT["Outputs"]
+  BRIEF["committee brief and flags<br/>no tool can award a tender"]
+  AUDIT["append-only audit JSONL<br/>inputs, outputs, timestamps,<br/>model, approver"]
+end
+
+FLOW["OVERALL DATA FLOW: ingest, plan, retrieve and analyse,<br/>synthesise, validate, human approves by name,<br/>write brief. Every step audited, then lens-audit verify."]
+
+OCDS -->|"lens-ingest, ijson"| DB
+DB --> READ
+BRIDGE -->|"stdio, JSON-RPC"| LENS
+BRIDGE --> STUB
+BRIDGE --> FETCH
+LENS --> READ
+LENS --> ACT
+LG -->|"calls tools, never SQL"| BRIDGE
+LG -->|"plan and synthesise"| GM
+GM --> OW
+GM --> FR
+LG --> CHK
+CHK -.->|"repair"| LG
+LG --> GATE
+GATE --> NAME
+NAME -->|"approved"| ACT
+NAME -.->|"rejected"| FAIL["fail - nothing written"]
+ACT --> BRIEF
+ACT -.->|"cites"| PORTAL
+FETCH --> OCP
+LG -.-> AUDIT
+BRIDGE -.-> AUDIT
+ACT -.-> AUDIT
+
+classDef gated fill:#7f1d1d,stroke:#fca5a5,color:#ffffff
+classDef borrowed fill:#1e3a8a,stroke:#93c5fd,color:#ffffff
+classDef human fill:#14532d,stroke:#86efac,color:#ffffff
+classDef note fill:#3f3f46,stroke:#a1a1aa,color:#ffffff
+class ACT,NORES gated
+class FETCH,OCP borrowed
+class GATE,NAME human
+class PORTAL,FLOW,STUB note
